@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="https://rbrdingenierie-ui.github.io/accueil_outils/favicon.svg">
+<title>Les flashcards du cours — Apprendre à apprendre</title>
+<style>
+  :root {
+    --navy: #1F3864;
+    --navy-soft: #4A5C82;
+    --gold: #B08D57;
+    --orange: #E0591F;
+    --teal: #168F7F;
+    --teal-soft: #E3F3F1;
+    --rouge: #A8322A;
+    --rouge-soft: #FBE5E2;
+    --bg: #F7F8FA;
+    --white: #FFFFFF;
+    --track: #8592B0;
+    --a11y-scale: 1;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; background: var(--bg); font-family: 'Trebuchet MS', 'Segoe UI', sans-serif; color: var(--navy); }
+  body { display:flex; justify-content:center; padding: 18px 16px 50px; }
+  .page { width:100%; max-width: 640px; }
+
+  .lien-evitement {
+    position: fixed; left: -9999px; top: 0; z-index: 999;
+    background: var(--navy); color: #FFFFFF; font-weight: 700;
+    padding: 12px 20px; border-radius: 0 0 12px 0; text-decoration: none;
+    font-size: calc(14px * var(--a11y-scale));
+  }
+  .lien-evitement:focus { left: 0; outline: 3px solid var(--gold); outline-offset: -3px; }
+
+  .a11y-bar {
+    display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap;
+    background:var(--white); border:2px solid var(--track); border-radius:14px;
+    padding:12px 16px; margin-bottom:24px;
+  }
+  /* une fois que l'apprenant descend dans la page, la barre reste accessible en haut.
+     Version compacte : elle ne doit pas manger l'ecran, surtout sur telephone. */
+  .a11y-bar.figee {
+    position:fixed; top:8px; left:50%; transform:translateX(-50%);
+    width:calc(100% - 20px); max-width:860px; z-index:1400;
+    padding:8px 12px; gap:7px; margin-bottom:0;
+    box-shadow:0 4px 18px rgba(31,56,100,0.18);
+  }
+  .a11y-bar.figee .a11y-toggle-btn { font-size:12px; padding:6px 11px; }
+  .a11y-bar.figee .a11y-bar-label { font-size:12px; }
+  .a11y-bar.figee .a11y-size-group { font-size:12px; }
+  .a11y-bar.figee .a11y-size-group button { width:30px; height:30px; font-size:13px; }
+
+  /* sur telephone, l'ecran est etroit : on reduit encore pour laisser voir le contenu */
+  @media (max-width: 620px) {
+    .a11y-bar.figee { padding:6px 8px; gap:5px; top:5px; }
+    .a11y-bar.figee .a11y-toggle-btn { font-size:11px; padding:5px 9px; }
+    .a11y-bar.figee .a11y-bar-label { font-size:11px; }
+    .a11y-bar.figee .a11y-size-group { font-size:11px; gap:4px; }
+    .a11y-bar.figee .a11y-size-group button { width:28px; height:28px; font-size:12px; }
+  }
+  /* remplace la barre dans le flux, pour que le contenu ne remonte pas d'un coup */
+  .a11y-bar-espace { display:none; }
+  .a11y-bar-espace.actif { display:block; }
+  .a11y-bar-label { font-size:13px; font-weight:800; color:var(--navy); margin-right:4px; }
+  .a11y-toggle-btn {
+    font-family:inherit; font-size:13px; font-weight:700; color:var(--navy-soft);
+    background:var(--white); border:2px solid var(--track); border-radius:999px;
+    padding:8px 14px; cursor:pointer;
+  }
+  .a11y-toggle-btn:hover { border-color:var(--navy-soft); }
+  .a11y-toggle-btn[aria-pressed="true"] { background:var(--navy); border-color:var(--navy); color:#FFFFFF; }
+  .a11y-size-group { display:flex; align-items:center; gap:6px; font-size:13px; font-weight:700; color:var(--navy); }
+  .a11y-size-group button {
+    font-family:inherit; font-weight:800; font-size:14px; color:var(--navy);
+    background:var(--white); border:2px solid var(--navy-soft); border-radius:8px;
+    width:34px; height:34px; cursor:pointer;
+  }
+  .a11y-size-group button:hover { border-color:var(--navy); }
+  .tts-btn {
+    font-family:inherit; font-size:13px; font-weight:700; color:var(--teal);
+    background:var(--teal-soft); border:2px solid var(--teal); border-radius:999px;
+    padding:8px 16px; cursor:pointer; display:block; margin:0 auto 24px;
+  }
+  .tts-btn:hover { background:var(--teal); color:#FFFFFF; }
+  .tts-btn:disabled { opacity:0.5; cursor:not-allowed; }
+
+  /* la barre reste accessible pendant tout le defilement */
+  .a11y-bar { position:sticky; top:0; z-index:500; box-shadow:0 4px 14px -4px rgba(31,56,100,0.32); }
+
+  .retour {
+    display:inline-flex; align-items:center; gap:7px; margin-bottom:16px;
+    font-size:calc(14px * var(--a11y-scale)); font-weight:700;
+    color:var(--navy-soft); background:var(--white);
+    border:2px solid var(--track); border-radius:999px;
+    padding:11px 20px; text-decoration:none; min-height:44px;
+  }
+  .retour:hover { border-color:var(--navy-soft); color:var(--navy); }
+  .retour:focus-visible { outline:3px solid var(--gold); outline-offset:3px; }
+
+  header { text-align:center; margin-bottom: 18px; }
+  header h1 { font-size: calc(26px * var(--a11y-scale)); margin: 0 0 6px 0; }
+  header p { font-size: calc(14px * var(--a11y-scale)); color: var(--navy-soft); margin:0; }
+
+  a:focus-visible, button:focus-visible, .card:focus-visible {
+    outline: 3px solid var(--gold) !important;
+    outline-offset: 3px;
+  }
+
+  /* ---------- progression ---------- */
+  .progress-row {
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom: 14px; font-size:calc(13.5px * var(--a11y-scale)); color: var(--navy-soft); font-weight:700;
+  }
+  .progress-bar { flex:1; height:10px; background:#DDE2EA; border:1px solid var(--track); border-radius:999px; margin: 0 12px; overflow:hidden; }
+  .progress-bar-fill { height:100%; background: var(--teal); border-radius:999px; transition: width 0.25s ease; }
+  .stats-row { display:flex; justify-content:center; gap: 18px; margin-bottom: 20px; font-size:calc(13.5px * var(--a11y-scale)); flex-wrap:wrap; }
+  .stats-row .stat { display:flex; align-items:center; gap:6px; color: var(--navy-soft); font-weight:700; }
+  .stats-row .dot { width:11px; height:11px; border-radius:50%; border:1px solid var(--track); }
+
+  /* ---------- la carte ---------- */
+  .card-zone { perspective: 1600px; margin-bottom: 20px; }
+  .card {
+    position:relative; width:100%; min-height: 270px;
+    transform-style: preserve-3d; transition: transform 0.5s cubic-bezier(.2,.8,.2,1);
+    cursor:pointer;
+  }
+  .card.flipped { transform: rotateY(180deg); }
+  .card-face {
+    position:absolute; inset:0; backface-visibility:hidden;
+    border-radius:20px; padding:36px 28px; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; text-align:center;
+    box-shadow: 0 8px 24px rgba(31,56,100,0.16);
+  }
+  .card-face.recto { background: var(--white); border: 2.5px solid var(--gold); }
+  .card-face.verso { background: linear-gradient(135deg, #14776B, #0C5A50); color:#FFFFFF; transform: rotateY(180deg); border:2.5px solid #0A4A42; }
+  .card-label {
+    position:absolute; top:16px; left:20px; font-size:calc(11.5px * var(--a11y-scale)); font-weight:800;
+    letter-spacing:1.5px; text-transform:uppercase; opacity:0.7;
+  }
+  .card-text { font-size: calc(19px * var(--a11y-scale)); font-weight:700; line-height:1.5; }
+  .card-face.verso .card-text { font-weight:500; font-size: calc(17.5px * var(--a11y-scale)); }
+  .card-hint { position:absolute; bottom:14px; font-size:calc(12.5px * var(--a11y-scale)); opacity:0.7; font-style:italic; }
+  .mastered-badge { position:absolute; top:14px; right:16px; font-size:20px; }
+
+  /* ---------- auto-evaluation ---------- */
+  .assess-row { display:flex; gap:12px; margin-bottom: 16px; }
+  .assess-row button {
+    flex:1; font-family:inherit; font-size:calc(15px * var(--a11y-scale)); font-weight:700;
+    padding:15px; border-radius:14px; cursor:pointer; border:2px solid transparent; min-height:48px;
+  }
+  .btn-revoir { background: var(--rouge-soft); color: var(--rouge); border-color: var(--rouge) !important; }
+  .btn-revoir:hover { background: #F6D5D0; }
+  .btn-connu { background: var(--teal-soft); color: var(--teal); border-color: var(--teal) !important; }
+  .btn-connu:hover { background: #D2ECE8; }
+  .assess-row button:disabled { opacity:0.4; cursor:not-allowed; }
+
+  /* ---------- navigation ---------- */
+  .nav-row { display:flex; align-items:center; gap:10px; margin-bottom: 20px; }
+  .nav-btn {
+    font-family:inherit; font-size:calc(14px * var(--a11y-scale)); font-weight:700; color:var(--navy);
+    background: var(--white); border:2px solid var(--track); border-radius:12px;
+    padding:13px 16px; cursor:pointer; flex-shrink:0; min-height:48px;
+  }
+  .nav-btn:hover { border-color: var(--navy); }
+  .nav-btn:disabled { opacity:0.4; cursor:not-allowed; }
+  .flip-btn {
+    flex:1; font-family:inherit; font-size:calc(14.5px * var(--a11y-scale)); font-weight:700; color:#FFFFFF;
+    background: var(--navy); border:2px solid #0E1A30; border-radius:12px; padding:13px; cursor:pointer; min-height:48px;
+  }
+  .flip-btn:hover { filter:brightness(1.15); }
+  .actions { display:flex; gap:12px; }
+  .actions > * { flex:1; }
+  .btn-secondary {
+    font-family:inherit; font-size:calc(13.5px * var(--a11y-scale)); font-weight:700; color:var(--navy-soft);
+    background:var(--white); border:2px solid var(--track); border-radius:12px; padding:13px; cursor:pointer; min-height:48px;
+  }
+  .btn-secondary:hover { border-color: var(--navy); color: var(--navy); }
+  .btn-secondary.danger:hover { border-color:var(--rouge); color:var(--rouge); }
+  .btn-secondary.active { background: var(--teal-soft); border-color: var(--teal); color: var(--teal); }
+
+  .raccourcis {
+    font-size:calc(12.5px * var(--a11y-scale)); color:var(--navy-soft);
+    text-align:center; margin-top:16px; line-height:1.6;
+  }
+  .raccourcis kbd {
+    background:var(--white); border:1px solid var(--track); border-radius:5px;
+    padding:1px 6px; font-family:inherit; font-size:0.95em; font-weight:700;
+  }
+
+  .sr-only {
+    position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+    overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
+  }
+  footer { text-align:center; font-size:calc(12.5px * var(--a11y-scale)); color:var(--navy-soft); margin-top: 22px; }
+
+  body.a11y-font, body.a11y-font * { font-family: Verdana, Geneva, sans-serif !important; }
+  body.falc-mode .falc-normal-content { display:none; }
+  body.falc-mode .falc-simple-content { display:block; }
+  body.a11y-contrast .rgpd-content { border-color:#000000; }
+  body.a11y-contrast .rgpd-content h2, body.a11y-contrast .rgpd-content p, body.a11y-contrast .rgpd-content li { color:#000000 !important; }
+  body.a11y-contrast { background:#FFFFFF; }
+  body.a11y-contrast .page { color:#000000; }
+  body.a11y-contrast header p,
+  body.a11y-contrast .why p,
+  body.a11y-contrast .cat-card p,
+  body.a11y-contrast footer,
+  body.a11y-contrast header .eyebrow { color:#000000 !important; }
+  body.a11y-contrast .why { border-width:3px; border-color:#000000; }
+  body.a11y-contrast .cat-card { border-width:3px; }
+  body.a11y-contrast .cat-card.ready { border-color:#000000; }
+  body.a11y-contrast .cat-card.build { border-color:#000000; }
+  body.a11y-contrast .ready h3, body.a11y-contrast .build h3 { color:#000000; }
+  body.a11y-contrast .ready .format-tags li, body.a11y-contrast .build .format-tags li { color:#000000; border:2px solid #000000; }
+  body.a11y-contrast .password-match { color: #000000 !important; }
+  body.a11y-contrast .forgot-link { color: #000000; }
+  body.a11y-contrast .connection-tip { color: #000000 !important; border-color: #000000; }
+  body.a11y-contrast .usage-check { color: #000000; }
+  body.a11y-contrast .tips-content { border:3px solid #000000; }
+  body.a11y-contrast .account-sous-titre { color: #000000; font-style: normal; }
+  body.a11y-contrast .account-panel,
+  body.a11y-contrast .account-form input,
+  body.a11y-contrast .account-tab { border-color: #000000 !important; }
+  body.a11y-contrast .account-hint { color: #000000 !important; }
+  body.anim-allegee .mentor-hand-wave {
+    animation:mentor-hand-repos 8s ease-in-out infinite !important;
+  }
+  body.anim-allegee .mentor-sourcil,
+  body.anim-allegee .mentor-sourire,
+  body.anim-allegee .mentor-cape,
+  body.anim-allegee .cape-pan-gauche,
+  body.anim-allegee .cape-pan-droit,
+  body.anim-allegee .mentor-hand-left,
+  body.anim-allegee .mentor-lunette-reflet,
+  body.anim-allegee .sabre-manche,
+  body.anim-allegee .mentor-barbe,
+  body.anim-allegee .sabre-led,
+  body.anim-allegee .fond-etoile,
+  body.anim-allegee .mentor-sparkle,
+  body.anim-allegee .halo-glow,
+  body.anim-allegee .mentor-body-group { animation:none !important; }
+  body.anim-allegee .shooting-star,
+  body.anim-allegee .spaceship { display:none !important; }
+  body.anim-allegee .fond-etoile { opacity:0.75; }
+  body.anim-allegee .mentor-sparkle { opacity:0.8; }
+
+  /* les modes s'appliquent aussi aux flashcards */
+  body.a11y-contrast { background:#FFFFFF; }
+  body.a11y-contrast .card-face.recto { border-color:#000000; }
+  body.a11y-contrast .card-text, body.a11y-contrast header p,
+  body.a11y-contrast .progress-row, body.a11y-contrast .stats-row .stat,
+  body.a11y-contrast .raccourcis, body.a11y-contrast footer { color:#000000; }
+  body.a11y-contrast .nav-btn, body.a11y-contrast .btn-secondary,
+  body.a11y-contrast .retour { border-color:#000000; color:#000000; }
+  body.a11y-contrast .flip-btn { background:#000000; border-color:#000000; }
+  body.a11y-contrast .btn-revoir { background:#FFFFFF; color:#8A1F18; border-color:#8A1F18 !important; }
+  body.a11y-contrast .btn-connu { background:#FFFFFF; color:#0A5248; border-color:#0A5248 !important; }
+  body.falc-mode .card-text { line-height:1.75; }
+  body.falc-mode .card-hint { font-size:calc(13.5px * var(--a11y-scale)); font-style:normal; opacity:0.9; }
+  body.anim-allegee .card { transition:none !important; }
+  body.anim-allegee .progress-bar-fill { transition:none !important; }
+  @media (prefers-reduced-motion: reduce) {
+    .card, .progress-bar-fill { transition:none !important; }
+  }
+
+  @media (max-width: 560px) {
+    body { padding:14px 12px 40px; }
+    .assess-row, .actions { flex-direction: column; }
+    .assess-row > *:not(:last-child), .actions > *:not(:last-child) { margin-bottom: 9px; }
+    .card-face { padding:28px 20px; }
+    .a11y-bar { padding:9px 10px; gap:7px; }
+  }
+  @media print {
+    body { display:block; padding:20px; }
+    header, .progress-row, .stats-row, .card-zone, .assess-row, .nav-row,
+    .actions, .a11y-bar, .retour, .raccourcis { display:none !important; }
+    .print-all { display:block !important; }
+  }
+  .print-all { display:none; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <a class="lien-evitement" href="#zoneCartes">Aller directement aux cartes</a>
+
+<div class="a11y-bar" id="a11yBar" role="region" aria-label="Options d'accessibilité">
+    <span class="a11y-bar-label">♿ Accessibilité</span>
+    <button type="button" id="a11yFontBtn" class="a11y-toggle-btn" aria-pressed="false">🔤 Police adaptée</button>
+    <button type="button" id="a11yContrastBtn" class="a11y-toggle-btn" aria-pressed="false">◐ Contraste renforcé</button>
+    <button type="button" id="falcModeBtn" class="a11y-toggle-btn" aria-pressed="false" title="Facile à Lire et à Comprendre : simplifie le texte de la page">📖 Mode FALC</button>
+    <button type="button" id="hoverReadBtn" class="a11y-toggle-btn" aria-pressed="false" title="Lit à voix haute le contenu de la page quand la souris passe dessus">🔊 Lecture au survol</button>
+    <div class="a11y-size-group" role="group" aria-label="Taille du texte">
+      <span>Taille du texte</span>
+      <button type="button" id="a11ySizeDown" class="a11y-size-btn" aria-label="Réduire la taille du texte">A−</button>
+      <button type="button" id="a11ySizeReset" class="a11y-size-btn" aria-label="Taille du texte par défaut">A</button>
+      <button type="button" id="a11ySizeUp" class="a11y-size-btn" aria-label="Agrandir la taille du texte">A+</button>
+    </div>
+  </div>
+
+  <a class="retour" href="https://rbrdingenierie-ui.github.io/arcade/">← Retour à l'Arcade</a>
+
+  <header>
+    <h1>🃏 Les flashcards du cours</h1>
+    <p>Retourne la carte, puis évalue-toi honnêtement : c'est ainsi qu'on mémorise.</p>
+  </header>
+
+  <main id="zoneCartes">
+  <div class="progress-row">
+    <span id="progressLabel">Carte 1/23</span>
+    <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Progression : cartes connues">
+      <div class="progress-bar-fill" id="progressFill"></div>
+    </div>
+    <span id="progressPct">0%</span>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat"><span class="dot" style="background:var(--teal)" aria-hidden="true"></span><span id="countConnu">0</span>&nbsp;connues</div>
+    <div class="stat"><span class="dot" style="background:var(--rouge)" aria-hidden="true"></span><span id="countRevoir">0</span>&nbsp;à revoir</div>
+    <div class="stat"><span class="dot" style="background:#DDE2EA" aria-hidden="true"></span><span id="countRestant">23</span>&nbsp;non vues</div>
+  </div>
+
+  <div class="card-zone">
+    <div class="card" id="card" tabindex="0" role="button" aria-pressed="false"
+         aria-label="Carte de révision. Appuie sur Entrée ou Espace pour la retourner.">
+      <div class="card-face recto">
+        <span class="card-label">Question</span>
+        <span class="mastered-badge" id="masteredBadge"></span>
+        <div class="card-text" id="rectoText"></div>
+        <span class="card-hint">Touche la carte pour voir la réponse</span>
+      </div>
+      <div class="card-face verso">
+        <span class="card-label">Réponse</span>
+        <div class="card-text" id="versoText"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="assess-row">
+    <button type="button" class="btn-revoir" id="btnRevoir">😕 À revoir</button>
+    <button type="button" class="btn-connu" id="btnConnu">😊 Je savais</button>
+  </div>
+
+  <div class="nav-row">
+    <button type="button" class="nav-btn" id="prevBtn" aria-label="Carte précédente">← Précédent</button>
+    <button type="button" class="flip-btn" id="flipBtn">Retourner la carte</button>
+    <button type="button" class="nav-btn" id="nextBtn" aria-label="Carte suivante">Suivant →</button>
+  </div>
+
+  <div class="actions">
+    <button type="button" class="btn-secondary" id="shuffleBtn">🔀 Mélanger</button>
+    <button type="button" class="btn-secondary" id="filterBtn" aria-pressed="false">🎯 Cartes à revoir</button>
+    <button type="button" class="btn-secondary danger" id="resetBtn">↺ Réinitialiser</button>
+  </div>
+
+  <p class="raccourcis">
+    Au clavier : <kbd>←</kbd> <kbd>→</kbd> pour changer de carte,
+    <kbd>Entrée</kbd> ou <kbd>Espace</kbd> pour la retourner.
+  </p>
+  </main>
+
+  <div class="print-all" id="printAll"></div>
+  <div class="sr-only" id="liveAnnounce" aria-live="polite"></div>
+  <footer>Benjamin RICHARD — Tous droits réservés</footer>
+</div>
+
+<script>
+
+(function () {
+  const A11Y_PREFS_KEY = 'menu-ressources-a11y-prefs-v1';
+  let a11yPrefs = { font: false, contrast: false, scale: 1, falc: false, hoverRead: false, animAllegee: false };
+  try {
+    const raw = localStorage.getItem(A11Y_PREFS_KEY);
+    if (raw) a11yPrefs = Object.assign(a11yPrefs, JSON.parse(raw));
+  } catch (e) {}
+  function saveA11yPrefs() {
+    try { localStorage.setItem(A11Y_PREFS_KEY, JSON.stringify(a11yPrefs)); } catch (e) {}
+  }
+  function applyA11yPrefs() {
+    document.body.classList.toggle('a11y-font', a11yPrefs.font);
+    document.body.classList.toggle('a11y-contrast', a11yPrefs.contrast);
+    document.body.classList.toggle('falc-mode', a11yPrefs.falc);
+    document.documentElement.style.setProperty('--a11y-scale', a11yPrefs.scale);
+    document.getElementById('a11yFontBtn').setAttribute('aria-pressed', a11yPrefs.font ? 'true' : 'false');
+    document.getElementById('a11yContrastBtn').setAttribute('aria-pressed', a11yPrefs.contrast ? 'true' : 'false');
+    document.getElementById('falcModeBtn').setAttribute('aria-pressed', a11yPrefs.falc ? 'true' : 'false');
+    document.getElementById('hoverReadBtn').setAttribute('aria-pressed', a11yPrefs.hoverRead ? 'true' : 'false');
+    document.body.classList.toggle('anim-allegee', a11yPrefs.animAllegee);
+    const bA = document.getElementById('animAllegeeBtn');
+    if (bA) bA.setAttribute('aria-pressed', a11yPrefs.animAllegee ? 'true' : 'false');
+  }
+  document.getElementById('a11yFontBtn').addEventListener('click', () => {
+    a11yPrefs.font = !a11yPrefs.font;
+    applyA11yPrefs(); saveA11yPrefs();
+  });
+  document.getElementById('a11yContrastBtn').addEventListener('click', () => {
+    a11yPrefs.contrast = !a11yPrefs.contrast;
+    applyA11yPrefs(); saveA11yPrefs();
+  });
+  document.getElementById('falcModeBtn').addEventListener('click', () => {
+    a11yPrefs.falc = !a11yPrefs.falc;
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    applyA11yPrefs(); saveA11yPrefs();
+  });
+  document.getElementById('hoverReadBtn').addEventListener('click', () => {
+    a11yPrefs.hoverRead = !a11yPrefs.hoverRead;
+    if (!a11yPrefs.hoverRead && window.speechSynthesis) window.speechSynthesis.cancel();
+    applyA11yPrefs(); saveA11yPrefs();
+  });
+
+  // ---- bouton "alleger les animations" ----
+  // Le reglage vaut pour toutes les pages : il est memorise avec les autres
+  // preferences d'accessibilite.
+  const btnAnimAllegee = document.getElementById('animAllegeeBtn');
+  if (btnAnimAllegee) {
+    btnAnimAllegee.addEventListener('click', () => {
+      a11yPrefs.animAllegee = !a11yPrefs.animAllegee;
+      applyA11yPrefs(); saveA11yPrefs();
+    });
+  }
+
+  document.getElementById('a11ySizeUp').addEventListener('click', () => {
+    a11yPrefs.scale = Math.min(1.6, Math.round((a11yPrefs.scale + 0.15) * 100) / 100);
+    applyA11yPrefs(); saveA11yPrefs();
+  });
+  document.getElementById('a11ySizeDown').addEventListener('click', () => {
+    a11yPrefs.scale = Math.max(0.85, Math.round((a11yPrefs.scale - 0.15) * 100) / 100);
+    applyA11yPrefs(); saveA11yPrefs();
+  });
+  document.getElementById('a11ySizeReset').addEventListener('click', () => {
+    a11yPrefs.scale = 1;
+    applyA11yPrefs(); saveA11yPrefs();
+  });
+  applyA11yPrefs();
+  // ---- barre d'accessibilite figee au defilement ----
+  // Elle reste atteignable a tout moment : un apprenant qui a besoin d'agrandir le texte
+  // ne doit pas avoir a remonter en haut de page pour le faire.
+  (function figerBarreA11y() {
+    const barre = document.getElementById('a11yBar');
+    const espace = document.getElementById('a11yBarEspace');
+    if (!barre || !espace) return;
+
+    let hauteurBarre = 0;
+    let positionDeclenchement = 0;
+
+    function mesurer() {
+      // mesure faite hors etat fige, sinon la position serait faussee
+      if (barre.classList.contains('figee')) return;
+      hauteurBarre = barre.offsetHeight;
+      positionDeclenchement = barre.getBoundingClientRect().top + window.scrollY;
+    }
+
+    function verifier() {
+      if (window.scrollY > positionDeclenchement) {
+        if (!barre.classList.contains('figee')) {
+          espace.style.height = hauteurBarre + 'px';
+          espace.classList.add('actif');
+          barre.classList.add('figee');
+        }
+      } else if (barre.classList.contains('figee')) {
+        barre.classList.remove('figee');
+        espace.classList.remove('actif');
+        mesurer();
+      }
+    }
+
+    mesurer();
+    window.addEventListener('scroll', verifier, { passive: true });
+    window.addEventListener('resize', () => {
+      // au redimensionnement, la barre change de hauteur : on remesure a froid
+      const etaitFigee = barre.classList.contains('figee');
+      barre.classList.remove('figee');
+      espace.classList.remove('actif');
+      mesurer();
+      if (etaitFigee) verifier();
+    });
+  })();
+
+  // ---- lecture au survol, sur l'integralite de la page ----
+  function getVisibleHoverText(el) {
+    const isFalc = document.body.classList.contains('falc-mode');
+    if (isFalc && el.closest('.falc-normal-content')) return '';
+    if (!isFalc && el.closest('.falc-simple-content')) return '';
+    const clone = el.cloneNode(true);
+    clone.querySelectorAll(isFalc ? '.falc-normal-content' : '.falc-simple-content').forEach(n => n.remove());
+    return clone.textContent.replace(/\s+/g, ' ').trim();
+  }
+  if ('speechSynthesis' in window) {
+    const HOVER_READ_SELECTOR = 'h1, p, label, .card-text, .card-label, .card-hint, .progress-row span, .stats-row .stat, .nav-btn, .flip-btn, .btn-secondary, .btn-revoir, .btn-connu, .retour, .raccourcis, .a11y-toggle-btn, .a11y-bar-label, .lien-evitement, footer';
+    document.querySelectorAll(HOVER_READ_SELECTOR).forEach(el => {
+      el.addEventListener('mouseenter', () => {
+        if (!a11yPrefs.hoverRead) return;
+        window.speechSynthesis.cancel();
+        const text = getVisibleHoverText(el);
+        if (!text) return;
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = 'fr-FR'; utter.rate = 0.95;
+        window.speechSynthesis.speak(utter);
+      });
+      el.addEventListener('mouseleave', () => { if (window.speechSynthesis) window.speechSynthesis.cancel(); });
+      el.addEventListener('focusin', () => { if (a11yPrefs.hoverRead) el.dispatchEvent(new Event('mouseenter')); });
+      el.addEventListener('focusout', () => { if (window.speechSynthesis) window.speechSynthesis.cancel(); });
+    });
+  }
+
+  // ---- afficher / masquer le mot de passe ----
+  // ---- retour immediat sur la correspondance des mots de passe ----
+  const champMdp = document.getElementById('signupPassword');
+  const champConfirm = document.getElementById('signupPasswordConfirm');
+  const messageMatch = document.getElementById('passwordMatch');
+  if (champMdp && champConfirm && messageMatch) {
+    function verifierCorrespondance() {
+      if (!champConfirm.value) { messageMatch.textContent = ''; messageMatch.className = 'password-match'; return; }
+      const identiques = champMdp.value === champConfirm.value;
+      messageMatch.textContent = identiques ? '✅ Les mots de passe correspondent' : '⚠️ Les mots de passe sont différents';
+      messageMatch.className = 'password-match ' + (identiques ? 'ok' : 'erreur');
+    }
+    champMdp.addEventListener('input', verifierCorrespondance);
+    champConfirm.addEventListener('input', verifierCorrespondance);
+  }
+
+  document.querySelectorAll('.password-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const input = document.getElementById(btn.dataset.target);
+      if (!input) return;
+      const visible = input.type === 'text';
+      input.type = visible ? 'password' : 'text';
+      btn.textContent = visible ? '👁️' : '🙈';
+      btn.setAttribute('aria-label', visible ? 'Afficher le mot de passe' : 'Masquer le mot de passe');
+      btn.setAttribute('aria-pressed', visible ? 'false' : 'true');
+    });
+  });
+})();
+
+</script>
+
+<script>
+const CARDS_DATA = [{"recto": "Quels sont les 5 types de mémoire mobilisés pour apprendre ?", "verso": "Visuelle, auditive, sémantique, de travail, à long terme."}, {"recto": "Comment la mémoire évolue-t-elle avec l'entraînement ?", "verso": "Elle se renforce, comme un muscle."}, {"recto": "Qu'est-ce que la métacognition ?", "verso": "Réfléchir sur sa propre façon de penser et d'apprendre."}, {"recto": "Quelles questions se poser pour être métacognitif ?", "verso": "Avant : que sais-je, quelle méthode ? Pendant : est-ce que je comprends ? Après : ai-je réussi, où me suis-je trompé ?"}, {"recto": "Qu'est-ce qu'apprendre par analogie ?", "verso": "Comparer une notion nouvelle à une notion connue, en cherchant ressemblances ET différences."}, {"recto": "Qu'est-ce que catégoriser ?", "verso": "Ranger une information nouvelle dans une ou plusieurs catégories déjà connues."}, {"recto": "Une exception invalide-t-elle une catégorie ?", "verso": "Non : elle l'enrichit et la nuance, elle ne l'invalide pas."}, {"recto": "Quelles sont les 3 étapes du processus de mémorisation ?", "verso": "Encodage (convertir), stockage (conserver), récupération (retrouver)."}, {"recto": "Que se passe-t-il dans le cerveau quand on apprend ?", "verso": "Les neurones forment des réseaux ; plus on les réactive, plus ils se renforcent."}, {"recto": "Quels sont les 4 leviers pour bien mémoriser ?", "verso": "Attention, charge de travail maîtrisée, réactivation régulière, hygiène de vie."}, {"recto": "Comment évolue l'oubli dans le temps ?", "verso": "Courbe exponentielle : très rapide juste après l'apprentissage, puis de plus en plus lente."}, {"recto": "Qu'est-ce que la répétition espacée ?", "verso": "Réviser à des intervalles de plus en plus grands, pour ralentir durablement l'oubli."}, {"recto": "Qu'est-ce que l'effet Dunning-Kruger ?", "verso": "Le décalage entre la compétence réelle d'une personne et la confiance qu'elle a en elle."}, {"recto": "Comment évolue la confiance au cours d'un apprentissage ?", "verso": "Elle grimpe vite (faux sentiment de maîtrise), chute (complexité perçue), puis remonte, justifiée."}, {"recto": "Quels sont les 5 « B » de la méthode ?", "verso": "Le Bon moment, le Bon lieu, la Bonne durée, le Bon nombre, la (les) Bonne(s) méthode(s)."}, {"recto": "Quel est le principe de la méthode Pomodoro ?", "verso": "25 min de travail concentré, 5 min de pause, répété 4 fois, puis une pause longue de 15-20 min."}, {"recto": "Comment fonctionne la technique de l'autotest ?", "verso": "Rédiger des questions le jour de l'apprentissage, y répondre sans le cours le lendemain, puis s'auto-évaluer."}, {"recto": "Pourquoi manipuler une information (schéma, carte mentale) aide-t-elle à la retenir ?", "verso": "La manipulation active rend l'information mémorable, contrairement à une lecture statique."}, {"recto": "Pourquoi chercher ses propres exemples, différents de ceux du cours, aide-t-il à apprendre ?", "verso": "Cela construit des repères personnels qui ancrent la notion dans du familier."}, {"recto": "Quel est le principe de la fiche studiométrique ?", "verso": "Répartir ses révisions dans le temps grâce à une grille qui indique, chaque jour, quelles notions revoir."}, {"recto": "Pourquoi les flashcards sont-elles efficaces pour mémoriser ?", "verso": "Elles combinent rappel actif et répétition espacée, tout en imposant le chunking (une notion à la fois)."}, {"recto": "Peut-on vraiment faire deux choses conscientes en même temps ?", "verso": "Non : le cerveau passe rapidement de l'une à l'autre, ce qui réduit la performance sur les deux."}, {"recto": "La lecture répétée est-elle la meilleure stratégie pour mémoriser à long terme ?", "verso": "Non : c'est l'une des moins efficaces ; se questionner sur le contenu fonctionne mieux."}];
+(function () {
+  const STORAGE_KEY = 'flashcards-progress-v1';
+  const cardEl = document.getElementById('card');
+  const rectoText = document.getElementById('rectoText');
+  const versoText = document.getElementById('versoText');
+  const masteredBadge = document.getElementById('masteredBadge');
+  const progressLabel = document.getElementById('progressLabel');
+  const progressFill = document.getElementById('progressFill');
+  const progressBar = document.querySelector('.progress-bar');
+  const progressPct = document.getElementById('progressPct');
+  const countConnu = document.getElementById('countConnu');
+  const countRevoir = document.getElementById('countRevoir');
+  const countRestant = document.getElementById('countRestant');
+  const liveAnnounce = document.getElementById('liveAnnounce');
+
+  let order = CARDS_DATA.map((_, i) => i);
+  let pos = 0;
+  let flipped = false;
+  let filterMode = false;
+  let status = {};
+
+  function loadStatus() {
+    try { const raw = localStorage.getItem(STORAGE_KEY); if (raw) return JSON.parse(raw); } catch(e) {}
+    return {};
+  }
+  function saveStatus() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(status)); } catch(e) {}
+  }
+  function activeOrder() {
+    if (!filterMode) return order;
+    return order.filter(i => status[i] === 'revoir');
+  }
+  function currentIndex() {
+    const ao = activeOrder();
+    if (ao.length === 0) return null;
+    if (pos >= ao.length) pos = 0;
+    return ao[pos];
+  }
+  function render() {
+    const ao = activeOrder();
+    if (ao.length === 0) {
+      document.querySelector('.card-zone').style.display = 'none';
+      document.querySelector('.assess-row').style.display = 'none';
+      document.querySelector('.nav-row').style.display = 'none';
+      progressLabel.textContent = filterMode ? 'Aucune carte à revoir 🎉' : 'Aucune carte';
+      liveAnnounce.textContent = filterMode
+        ? 'Bravo, plus aucune carte à revoir.'
+        : 'Aucune carte disponible.';
+      updateStats();
+      return;
+    }
+    document.querySelector('.card-zone').style.display = '';
+    document.querySelector('.assess-row').style.display = '';
+    document.querySelector('.nav-row').style.display = '';
+    const idx = currentIndex();
+    const c = CARDS_DATA[idx];
+    rectoText.textContent = c.recto;
+    versoText.textContent = c.verso;
+    cardEl.classList.toggle('flipped', flipped);
+    cardEl.setAttribute('aria-pressed', flipped ? 'true' : 'false');
+    masteredBadge.textContent = status[idx] === 'connu' ? '✅' : (status[idx] === 'revoir' ? '🔁' : '');
+    progressLabel.textContent = 'Carte ' + (pos + 1) + '/' + ao.length;
+    document.getElementById('prevBtn').disabled = pos === 0;
+    document.getElementById('nextBtn').disabled = pos === ao.length - 1;
+    updateStats();
+    // le lecteur d'ecran annonce la carte ET son contenu
+    liveAnnounce.textContent = 'Carte ' + (pos + 1) + ' sur ' + ao.length + '. '
+      + (flipped ? 'Réponse : ' + c.verso : 'Question : ' + c.recto);
+  }
+  function updateStats() {
+    const total = CARDS_DATA.length;
+    let connu = 0, revoir = 0;
+    Object.values(status).forEach(s => { if (s === 'connu') connu++; else if (s === 'revoir') revoir++; });
+    countConnu.textContent = connu;
+    countRevoir.textContent = revoir;
+    countRestant.textContent = total - connu - revoir;
+    const pct = Math.round((connu / total) * 100);
+    progressFill.style.width = pct + '%';
+    progressPct.textContent = pct + '%';
+    progressBar.setAttribute('aria-valuenow', pct);
+  }
+  function flip() {
+    flipped = !flipped;
+    cardEl.classList.toggle('flipped', flipped);
+    cardEl.setAttribute('aria-pressed', flipped ? 'true' : 'false');
+    const idx = currentIndex();
+    const c = idx !== null ? CARDS_DATA[idx] : null;
+    liveAnnounce.textContent = flipped
+      ? 'Réponse : ' + (c ? c.verso : '')
+      : 'Question : ' + (c ? c.recto : '');
+  }
+  function goTo(newPos) {
+    const ao = activeOrder();
+    if (newPos < 0 || newPos >= ao.length) return;
+    pos = newPos;
+    flipped = false;
+    render();
+  }
+  function mark(value) {
+    const idx = currentIndex();
+    if (idx === null) return;
+    status[idx] = value;
+    saveStatus();
+    const mot = value === 'connu' ? 'Carte marquée comme connue.' : 'Carte marquée à revoir.';
+    liveAnnounce.textContent = mot;
+    const ao = activeOrder();
+    if (pos < ao.length - 1 || !filterMode) {
+      setTimeout(() => goTo(Math.min(pos + (filterMode ? 0 : 1), activeOrder().length - 1)), 250);
+    } else {
+      render();
+    }
+  }
+
+  cardEl.addEventListener('click', flip);
+  cardEl.addEventListener('keydown', (e) => {
+    if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); flip(); }
+  });
+  document.getElementById('flipBtn').addEventListener('click', flip);
+  document.getElementById('prevBtn').addEventListener('click', () => goTo(pos - 1));
+  document.getElementById('nextBtn').addEventListener('click', () => goTo(pos + 1));
+  document.getElementById('btnRevoir').addEventListener('click', () => mark('revoir'));
+  document.getElementById('btnConnu').addEventListener('click', () => mark('connu'));
+
+  document.getElementById('shuffleBtn').addEventListener('click', () => {
+    for (let i = order.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]];
+    }
+    pos = 0; flipped = false; render();
+    liveAnnounce.textContent = 'Cartes mélangées.';
+  });
+  document.getElementById('filterBtn').addEventListener('click', function () {
+    filterMode = !filterMode;
+    this.classList.toggle('active', filterMode);
+    this.setAttribute('aria-pressed', filterMode ? 'true' : 'false');
+    pos = 0; flipped = false; render();
+    liveAnnounce.textContent = filterMode
+      ? 'Affichage des cartes à revoir seulement.'
+      : 'Affichage de toutes les cartes.';
+  });
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    if (!confirm('Réinitialiser toute ta progression sur les 23 cartes ?')) return;
+    status = {};
+    saveStatus();
+    filterMode = false;
+    const fb = document.getElementById('filterBtn');
+    fb.classList.remove('active');
+    fb.setAttribute('aria-pressed', 'false');
+    pos = 0; flipped = false; render();
+    liveAnnounce.textContent = 'Progression réinitialisée.';
+  });
+
+  // les fleches ne doivent pas gener la saisie ni les boutons
+  document.addEventListener('keydown', (e) => {
+    const t = document.activeElement;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'BUTTON')) return;
+    if (e.key === 'ArrowRight') goTo(pos + 1);
+    if (e.key === 'ArrowLeft') goTo(pos - 1);
+  });
+
+  // vue imprimable : toutes les cartes
+  const printAll = document.getElementById('printAll');
+  let printHtml = '<h1 style="text-align:center;color:#1F3864;">Les flashcards du cours</h1>';
+  CARDS_DATA.forEach((c, i) => {
+    printHtml += '<div style="border:1px solid #999;border-radius:10px;padding:14px 18px;margin-bottom:12px;">'
+      + '<div style="font-weight:700;color:#1F3864;">' + (i+1) + '. ' + c.recto + '</div>'
+      + '<div style="color:#333;margin-top:6px;">' + c.verso + '</div></div>';
+  });
+  printAll.innerHTML = printHtml;
+
+  status = loadStatus();
+  render();
+})();
+</script>
+</body>
+</html>
